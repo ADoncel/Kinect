@@ -1,1 +1,1 @@
-Hola esto es una prueba de GIT, vamos a realizar cambios en el fichero
+Hola esto es una prueba de GIT
