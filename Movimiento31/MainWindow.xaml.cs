@@ -11,23 +11,13 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
     using System.Windows.Media;
     using Microsoft.Kinect;
 
-    using System;
-
-    public struct Vector3
-    {
-        public float x;
-        public float y;
-        public float z;
-    };
-
     public enum Posture
     {
         None,
-        StandBy,
+        Inicio,
         ManoDetras,
         ManoAdelantada,
-        Sobrepasado,
-
+        Sobrepasado
     };
 
     /// <summary>
@@ -37,11 +27,22 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
     {
         const int PostureDetectionNumber = 10;
         int accumulator = 0;
-        Posture previousPosture = Posture.None;
-        Posture postureInDetection = Posture.None;
+        Posture postureInitial = Posture.None;
+        Posture postureAtras = Posture.ManoAdelantada;
+        Posture postureFinal = Posture.ManoDetras;
+        Posture postureStart = Posture.Inicio;
 
-        Vector3 handR, wristR, elbowR, shoulderR;
-        private readonly Pen posturaCorecta = new Pen(Brushes.Blue, 6);
+        Joint wristR, elbowR, shoulderR;
+        private readonly Pen penCorrecto = new Pen(Brushes.Green, 6);
+        private readonly Pen penAdelantado = new Pen(Brushes.Turquoise, 6);
+        private readonly Pen penAtrasado = new Pen(Brushes.Yellow, 6);
+        private readonly Pen penStandby = new Pen(Brushes.Blue, 6);
+        private readonly Pen penError = new Pen(Brushes.Red, 6);
+
+        private bool reposo = false;
+        private bool adelantada = false;
+        private bool atrasada = false;
+        private bool correcto = false;
 
         /// <summary>
         /// Width of output drawing
@@ -86,12 +87,12 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
         /// <summary>
         /// Pen used for drawing bones that are currently tracked
         /// </summary>
-        private readonly Pen trackedBonePen = new Pen(Brushes.Green, 6);
+        private readonly Pen trackedBonePen = new Pen(Brushes.White, 6);
 
         /// <summary>
         /// Pen used for drawing bones that are currently inferred
         /// </summary>        
-        private readonly Pen inferredBonePen = new Pen(Brushes.Gray, 1);
+        private readonly Pen inferredBonePen = new Pen(Brushes.RosyBrown, 1);
 
         /// <summary>
         /// Active Kinect sensor
@@ -276,91 +277,65 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
             {
                 if (bones.TrackingState == SkeletonTrackingState.Tracked)
                 {
-                    handR = new Vector3(); //MANO
-                    handR.x = bones.Joints[JointType.HandRight].Position.X;
-                    handR.y = bones.Joints[JointType.HandRight].Position.Y;
-                    handR.z = bones.Joints[JointType.HandRight].Position.Z;
-
-                    wristR = new Vector3(); //MUÑECA
-                    wristR.x = bones.Joints[JointType.WristRight].Position.X;
-                    wristR.y = bones.Joints[JointType.WristRight].Position.Y;
-                    wristR.z = bones.Joints[JointType.WristRight].Position.Z;
-
-                    elbowR = new Vector3(); //CODO
-                    elbowR.x = bones.Joints[JointType.ElbowRight].Position.X;
-                    elbowR.y = bones.Joints[JointType.ElbowRight].Position.Y;
-                    elbowR.z = bones.Joints[JointType.ElbowRight].Position.Z;
-
-                    shoulderR = new Vector3(); //HOMBRO
-                    shoulderR.x = bones.Joints[JointType.ShoulderRight].Position.X;
-                    shoulderR.y = bones.Joints[JointType.ShoulderRight].Position.Y;
-                    shoulderR.z = bones.Joints[JointType.ShoulderRight].Position.Z;
+                    wristR = bones.Joints[JointType.WristRight]; //MUÑECA
+                    elbowR = bones.Joints[JointType.ElbowRight]; //CODO
+                    shoulderR = bones.Joints[JointType.ShoulderRight]; //HOMBRO
                 }
             }
 
-            if (StandBy(handR, wristR, elbowR, shoulderR))
-            {
-                if (PostureDetector(Posture.StandBy))
-                {
-                    solucionP.Content = previousPosture.ToString();
-                }
-            }
-            else
-            {
-                if (PostureDetector(Posture.None))
-                {
-                    solucionP.Content = previousPosture.ToString();
-                }
-            }
+            // Llamada a las comprobaciones de la posicion del brazo
+            if (shoulderR.TrackingState == JointTrackingState.Tracked)
+                comprobarGestos(wristR, elbowR, shoulderR);           
+
+            /*solucionP.Content = "Muñeca: " + wristR.Position.X + " | " + wristR.Position.Y + " | " + wristR.Position.Z +
+                "\nCodo: " + elbowR.Position.X + " | " + elbowR.Position.Y + " | " + elbowR.Position.Z +
+                "\nHombro: " + shoulderR.Position.X + " | " + shoulderR.Position.Y + " | " + shoulderR.Position.Z;*/
         }
 
-        public bool StandBy(Vector3 handR, Vector3 wristR, Vector3 elbowR, Vector3 shoulderR)
+        public bool PosInicio(Joint wristR, Joint elbowR, Joint shoulderR)
         {
-            if (System.Math.Abs(elbowR.y - handR.y) > 0.04f && System.Math.Abs(elbowR.y - shoulderR.y) > 0.04f && System.Math.Abs(handR.y - shoulderR.y) > 0.04f)
+            if (elbowR.Position.Y < shoulderR.Position.Y + 0.03 && elbowR.Position.Y > shoulderR.Position.Y - 0.03 &&
+                wristR.Position.Y < shoulderR.Position.Y + 0.05 && wristR.Position.Y > shoulderR.Position.Y - 0.05
+                && elbowR.Position.Z < shoulderR.Position.Z + 0.03 && elbowR.Position.Z > shoulderR.Position.Z - 0.1 &&
+                wristR.Position.Z < shoulderR.Position.Z + 0.03 && wristR.Position.Z > shoulderR.Position.Z - 0.15)
             {
-                return false;
+                return true;
             }
-            return true;
+            return false;
         }
-        public bool ManoDetras(Vector3 handR, Vector3 wristR, Vector3 elbowR, Vector3 shoulderR)
+        public bool ManoAdelantada(Joint wristR, Joint elbowR, Joint shoulderR)
         {
-            if (System.Math.Abs(elbowR.y - handR.y) > 0.04f && System.Math.Abs(elbowR.y - shoulderR.y) > 0.04f && System.Math.Abs(handR.y - shoulderR.y) > 0.04f)
+            if (elbowR.Position.Z > shoulderR.Position.Z + 0.03 && wristR.Position.Z > shoulderR.Position.Z + 0.03)
             {
-                return false;
+                return true;
             }
-            return true;
+            return false;
         }
-        public bool ManoAdelantada(Vector3 handR, Vector3 wristR, Vector3 elbowR, Vector3 shoulderR)
+        public bool ManoDetras(Joint wristR, Joint elbowR, Joint shoulderR)
         {
-            if (System.Math.Abs(elbowR.y - handR.y) > 0.04f && System.Math.Abs(elbowR.y - shoulderR.y) > 0.04f && System.Math.Abs(handR.y - shoulderR.y) > 0.04f)
+            if (elbowR.Position.Z > shoulderR.Position.Z + 0.14 && wristR.Position.Z > shoulderR.Position.Z + 0.19)
             {
-                return false;
+                return true;
             }
-            return true;
+            return false;
         }
-        public bool Sobrepasado(Vector3 handR, Vector3 wristR, Vector3 elbowR, Vector3 shoulderR)
+        public bool CasoError(Joint wristR, Joint elbowR, Joint shoulderR)
         {
-            if (System.Math.Abs(elbowR.y - handR.y) > 0.04f && System.Math.Abs(elbowR.y - shoulderR.y) > 0.04f && System.Math.Abs(handR.y - shoulderR.y) > 0.04f)
+            if (elbowR.Position.Z < shoulderR.Position.Z - 0.1 || wristR.Position.Z < shoulderR.Position.Z - 0.15 || 
+                elbowR.Position.Y > shoulderR.Position.Y + 0.03 || elbowR.Position.Y < shoulderR.Position.Y - 0.03 ||
+                wristR.Position.Y > shoulderR.Position.Y + 0.05 || wristR.Position.Y < shoulderR.Position.Y - 0.05)
             {
-                return false;
+                return true;
             }
-            return true;
-        }
-        public bool None(Vector3 handR, Vector3 wristR, Vector3 elbowR, Vector3 shoulderR)
-        {
-            if (System.Math.Abs(elbowR.y - handR.y) > 0.04f && System.Math.Abs(elbowR.y - shoulderR.y) > 0.04f && System.Math.Abs(handR.y - shoulderR.y) > 0.04f)
-            {
-                return false;
-            }
-            return true;
+            return false;
         }
 
         public bool PostureDetector(Posture posture)
         {
-            if (postureInDetection != posture)
+            if (postureStart != posture)
             {
                 accumulator = 0;
-                postureInDetection = posture;
+                postureStart = posture;
                 return false;
             }
             if (accumulator < PostureDetectionNumber)
@@ -368,15 +343,75 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                 accumulator++;
                 return false;
             }
-            if (posture != previousPosture)
+            if (posture != postureInitial)
             {
                 accumulator = 0;
-                previousPosture = posture;
+                postureInitial = posture;
                 return true;
             }
             else
                 accumulator = 0;
             return false;
+        }
+
+        public void comprobarGestos(Joint wristR, Joint elbowR, Joint shoulderR)
+        {
+            if (PosInicio(wristR, elbowR, shoulderR))
+            {
+                if (PostureDetector(Posture.Inicio))
+                {
+                    solucionP.Content = "Postura de inicio correcta";
+                    reposo = true;
+                }
+            }
+            else
+            {
+                if (reposo)
+                {
+                    if (ManoDetras(wristR, elbowR, shoulderR))
+                    {
+                        if (PostureDetector(Posture.ManoDetras))
+                        {
+                            correcto = true;
+                            adelantada = false;
+                            solucionP.Content = "Moviento finalizado correctamente";
+                        }
+                    }
+                    else if (ManoAdelantada(wristR, elbowR, shoulderR))
+                    {
+                        if (PostureDetector(Posture.ManoAdelantada))
+                        {
+                            adelantada = true;
+                            solucionP.Content = "Mueva la mano hacia atras";
+                        }
+                    }
+                    else if (PosInicio(wristR, elbowR, shoulderR))
+                    {
+                        if (PostureDetector(Posture.Inicio))
+                        {
+                            solucionP.Content = "Postura de inicio, comienze";
+                        }
+                    }
+                    else if (CasoError(wristR, elbowR, shoulderR))
+                    {
+                        if (PostureDetector(Posture.None))
+                        {
+                            correcto = false;
+                            adelantada = false;
+                            reposo = false;
+                            solucionP.Content = "Establezca la posicion inicial";
+                        }
+                    }
+                }
+                else if (PostureDetector(Posture.None))
+                {
+                    if (PostureDetector(Posture.None))
+                    {
+                        reposo = false;
+                        solucionP.Content = "Establezca la posicion inicial";
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -479,10 +514,46 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
             Pen drawPen = this.inferredBonePen;
             if (joint0.TrackingState == JointTrackingState.Tracked && joint1.TrackingState == JointTrackingState.Tracked)
             {
-                drawPen = this.trackedBonePen;
+                // Pintamos el hueso Hombro - Codo segun la posicion en la que se encuentra
+                if (jointType0 == JointType.ShoulderRight && jointType1 == JointType.ElbowRight)
+                {
+                    drawPen = selectColor();
+                }
+                // Pintamos el hueso Codo - Muñeca segun la posicion en la que se encuentra
+                else if (jointType0 == JointType.ElbowRight && jointType1 == JointType.WristRight)
+                {
+                    drawPen = selectColor();
+                }
+                // Pintamos el hueso Muñeca - Mano segun la posicion en la que se encuentra
+                else if (jointType0 == JointType.WristRight && jointType1 == JointType.HandRight)
+                {
+                    drawPen = selectColor();
+                }
+                // Pintamos el resto de huesos con el color por defecto
+                else
+                    drawPen = this.trackedBonePen;
             }
 
             drawingContext.DrawLine(drawPen, this.SkeletonPointToScreen(joint0.Position), this.SkeletonPointToScreen(joint1.Position));
+        }
+
+        // Metodo para la seleccion del color segun la posicion
+        // en la que se encuentre el brazo
+        public Pen selectColor()
+        {
+            if (reposo)
+            {
+                if (adelantada)
+                    return penAdelantado;
+                else if (correcto)
+                    return penAtrasado;
+                else if (atrasada)
+                    return penCorrecto;
+                else
+                    return penStandby;
+            }
+            else
+                return penError;
         }
 
         /// <summary>

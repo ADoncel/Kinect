@@ -70,6 +70,6 @@
         
         <TextBlock FontFamily="Segoe UI" FontSize="18" Foreground="{StaticResource MediumGreyBrush}" Margin="597,0,131,0" VerticalAlignment="Bottom" Grid.Row="2">Skeleton Basics</TextBlock>
         
-        <Label x:Name="solucionP" Content="Kinect Status Charge" HorizontalAlignment="Right" FontSize="35" Margin="0,0,-1,3" Grid.Row="2" Grid.RowSpan="2" Width="331"></Label>
+        <Label x:Name="solucionP" Content="Establezca la posicion inicial" HorizontalAlignment="Right" FontSize="25" Margin="0,0,0,3" Grid.Row="2" Grid.RowSpan="2" Width="406"></Label>
     </Grid>
 </Window>
