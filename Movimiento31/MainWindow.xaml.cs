@@ -15,9 +15,8 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
     {
         None,
         Inicio,
-        ManoDetras,
-        ManoAdelantada,
-        Sobrepasado
+        Correcto,
+        Transcurso,
     };
 
     /// <summary>
@@ -28,20 +27,20 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
         const int PostureDetectionNumber = 10;
         int accumulator = 0;
         Posture postureInitial = Posture.None;
-        Posture postureAtras = Posture.ManoAdelantada;
-        Posture postureFinal = Posture.ManoDetras;
+        Posture postureAtras = Posture.Transcurso;
+        Posture postureFinal = Posture.Correcto;
         Posture postureStart = Posture.Inicio;
 
+        // Puntos de union y Pens con los que vamos a pintar los huesos del cuerpo segun el movimiento
         Joint wristR, elbowR, shoulderR;
         private readonly Pen penCorrecto = new Pen(Brushes.Green, 6);
-        private readonly Pen penAdelantado = new Pen(Brushes.Turquoise, 6);
-        private readonly Pen penAtrasado = new Pen(Brushes.Yellow, 6);
-        private readonly Pen penStandby = new Pen(Brushes.Blue, 6);
+        private readonly Pen penTranscurso = new Pen(Brushes.Yellow, 6);
+        private readonly Pen penInicio = new Pen(Brushes.Blue, 6);
         private readonly Pen penError = new Pen(Brushes.Red, 6);
 
+        // Booleanos para controlar la posicion y pintar los huesos de distinto color
         private bool reposo = false;
-        private bool adelantada = false;
-        private bool atrasada = false;
+        private bool proceso = false;
         private bool correcto = false;
 
         /// <summary>
@@ -275,6 +274,7 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
 
             foreach (Skeleton bones in skeletons)
             {
+                // Guardamos los puntos de union que nos interesan para el movimiento
                 if (bones.TrackingState == SkeletonTrackingState.Tracked)
                 {
                     wristR = bones.Joints[JointType.WristRight]; //MUÑECA
@@ -283,15 +283,15 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                 }
             }
 
-            // Llamada a las comprobaciones de la posicion del brazo
+            // Llamada a las comprobaciones de la posicion del brazo, 
+            // para que acceda el punto del hombro debe estar en tracking
+            // sino produce errores.
             if (shoulderR.TrackingState == JointTrackingState.Tracked)
                 comprobarGestos(wristR, elbowR, shoulderR);           
-
-            /*solucionP.Content = "Muñeca: " + wristR.Position.X + " | " + wristR.Position.Y + " | " + wristR.Position.Z +
-                "\nCodo: " + elbowR.Position.X + " | " + elbowR.Position.Y + " | " + elbowR.Position.Z +
-                "\nHombro: " + shoulderR.Position.X + " | " + shoulderR.Position.Y + " | " + shoulderR.Position.Z;*/
         }
 
+        // Comprueba si se encuentra en la posicion inicial
+        // Mano derecha en cruz.
         public bool PosInicio(Joint wristR, Joint elbowR, Joint shoulderR)
         {
             if (elbowR.Position.Y < shoulderR.Position.Y + 0.03 && elbowR.Position.Y > shoulderR.Position.Y - 0.03 &&
@@ -303,7 +303,10 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
             }
             return false;
         }
-        public bool ManoAdelantada(Joint wristR, Joint elbowR, Joint shoulderR)
+
+        // Comprueba si esta avanzando en la hacia la posicion final.
+        // Mano en cruz retrasada respecto al hombro.
+        public bool TransMovimiento(Joint wristR, Joint elbowR, Joint shoulderR)
         {
             if (elbowR.Position.Z > shoulderR.Position.Z + 0.03 && wristR.Position.Z > shoulderR.Position.Z + 0.03)
             {
@@ -311,7 +314,10 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
             }
             return false;
         }
-        public bool ManoDetras(Joint wristR, Joint elbowR, Joint shoulderR)
+
+        // Comprueba si ha llegado a la posicion final del movimiento.
+        // Mano en cruz atrasada respecto al hombro hasta el limite.
+        public bool MovFinalizado(Joint wristR, Joint elbowR, Joint shoulderR)
         {
             if (elbowR.Position.Z > shoulderR.Position.Z + 0.14 && wristR.Position.Z > shoulderR.Position.Z + 0.19)
             {
@@ -319,6 +325,9 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
             }
             return false;
         }
+
+        // Comprobacion de los casos de error.
+        // Reinicial el ejercicio si se cumple cualquiera de ellos.
         public bool CasoError(Joint wristR, Joint elbowR, Joint shoulderR)
         {
             if (elbowR.Position.Z < shoulderR.Position.Z - 0.1 || wristR.Position.Z < shoulderR.Position.Z - 0.15 || 
@@ -354,6 +363,7 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
             return false;
         }
 
+        // Metodo general de comprobacion de gestos.
         public void comprobarGestos(Joint wristR, Joint elbowR, Joint shoulderR)
         {
             if (PosInicio(wristR, elbowR, shoulderR))
@@ -366,22 +376,24 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
             }
             else
             {
+                // La primera postura que debe reconocer sera la de reposo sino
+                // no dara comienzo el ejercicio.
                 if (reposo)
                 {
-                    if (ManoDetras(wristR, elbowR, shoulderR))
+                    if (MovFinalizado(wristR, elbowR, shoulderR))
                     {
-                        if (PostureDetector(Posture.ManoDetras))
+                        if (PostureDetector(Posture.Correcto))
                         {
                             correcto = true;
-                            adelantada = false;
+                            proceso = false;
                             solucionP.Content = "Moviento finalizado correctamente";
                         }
                     }
-                    else if (ManoAdelantada(wristR, elbowR, shoulderR))
+                    else if (TransMovimiento(wristR, elbowR, shoulderR))
                     {
-                        if (PostureDetector(Posture.ManoAdelantada))
+                        if (PostureDetector(Posture.Transcurso))
                         {
-                            adelantada = true;
+                            proceso = true;
                             solucionP.Content = "Mueva la mano hacia atras";
                         }
                     }
@@ -397,16 +409,21 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                         if (PostureDetector(Posture.None))
                         {
                             correcto = false;
-                            adelantada = false;
+                            proceso = false;
                             reposo = false;
                             solucionP.Content = "Establezca la posicion inicial";
                         }
                     }
                 }
+
+                // Si salta un caso de error o no se establece la pos de reposo
+                // al iniciar el ejercicio.
                 else if (PostureDetector(Posture.None))
                 {
                     if (PostureDetector(Posture.None))
                     {
+                        correcto = false;
+                        proceso = false;
                         reposo = false;
                         solucionP.Content = "Establezca la posicion inicial";
                     }
@@ -538,19 +555,17 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
         }
 
         // Metodo para la seleccion del color segun la posicion
-        // en la que se encuentre el brazo
+        // en la que se encuentre el brazo.
         public Pen selectColor()
         {
             if (reposo)
             {
-                if (adelantada)
-                    return penAdelantado;
+                if (proceso)
+                    return penTranscurso;
                 else if (correcto)
-                    return penAtrasado;
-                else if (atrasada)
                     return penCorrecto;
                 else
-                    return penStandby;
+                    return penInicio;
             }
             else
                 return penError;
