@@ -1,0 +1,26 @@
+D:\VS 2010\SkeletonBasics-WPF\obj\Debug\SkeletonBasics-WPF.csprojResolveAssemblyReference.cache
+D:\VS 2010\SkeletonBasics-WPF\obj\Debug\MainWindow.baml
+D:\VS 2010\SkeletonBasics-WPF\obj\Debug\MainWindow.g.cs
+D:\VS 2010\SkeletonBasics-WPF\obj\Debug\App.g.cs
+D:\VS 2010\SkeletonBasics-WPF\obj\Debug\SkeletonBasics-WPF_MarkupCompile.cache
+D:\VS 2010\SkeletonBasics-WPF\obj\Debug\SkeletonBasics-WPF.g.resources
+D:\VS 2010\SkeletonBasics-WPF\obj\Debug\Microsoft.Samples.Kinect.SkeletonBasics.Properties.Resources.resources
+D:\VS 2010\SkeletonBasics-WPF\obj\Debug\SkeletonBasics-WPF.csproj.GenerateResource.Cache
+D:\VS 2010\SkeletonBasics-WPF\bin\Debug\SkeletonBasics-WPF.exe
+D:\VS 2010\SkeletonBasics-WPF\bin\Debug\SkeletonBasics-WPF.pdb
+D:\VS 2010\SkeletonBasics-WPF\obj\Debug\SkeletonBasics-WPF.exe
+D:\VS 2010\SkeletonBasics-WPF\obj\Debug\SkeletonBasics-WPF.pdb
+D:\VS 2010\Movimiento31\bin\Debug\SkeletonBasics-WPF.exe
+D:\VS 2010\Movimiento31\bin\Debug\SkeletonBasics-WPF.pdb
+D:\VS 2010\Movimiento31\obj\Debug\SkeletonBasics-WPF.csprojResolveAssemblyReference.cache
+D:\VS 2010\Movimiento31\obj\Debug\MainWindow.baml
+D:\VS 2010\Movimiento31\obj\Debug\MainWindow.g.cs
+D:\VS 2010\Movimiento31\obj\Debug\App.g.cs
+D:\VS 2010\Movimiento31\obj\Debug\SkeletonBasics-WPF_MarkupCompile.cache
+D:\VS 2010\Movimiento31\obj\Debug\SkeletonBasics-WPF.g.resources
+D:\VS 2010\Movimiento31\obj\Debug\Microsoft.Samples.Kinect.SkeletonBasics.Properties.Resources.resources
+D:\VS 2010\Movimiento31\obj\Debug\SkeletonBasics-WPF.csproj.GenerateResource.Cache
+D:\VS 2010\Movimiento31\obj\Debug\SkeletonBasics-WPF.exe
+D:\VS 2010\Movimiento31\obj\Debug\SkeletonBasics-WPF.pdb
+D:\VS 2010\Practica 2 Kinect\obj\Debug\SkeletonBasics-WPF.exe
+D:\VS 2010\Practica 2 Kinect\obj\Debug\SkeletonBasics-WPF.pdb
