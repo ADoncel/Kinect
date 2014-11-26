@@ -48,9 +48,9 @@
     <Grid Name="layoutGrid" Margin="10 0 10 0">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="555*"/>
+            <RowDefinition Height="0"/>
+            <RowDefinition Height="74"/>
         </Grid.RowDefinitions>
         <DockPanel Grid.Row="0" Margin="0 0 0 20">
             <Image DockPanel.Dock="Left" Source="Images\Logo.png" Stretch="Fill" Height="32" Width="81" Margin="0 10 0 5"/>
@@ -65,13 +65,16 @@
                 <Canvas Background="Transparent"></Canvas>
             </Grid>
         </Viewbox>
-            
-        <CheckBox Grid.Row="2" Style="{StaticResource SquareCheckBox}" Content="Seated Mode" Height="Auto" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0 10 10 10" Name="checkBoxSeatedMode" Checked="CheckBoxSeatedModeChanged" Unchecked="CheckBoxSeatedModeChanged"/>
         <StatusBar Grid.Row="3" HorizontalAlignment="Stretch" Name="statusBar" VerticalAlignment="Bottom" Background="White" Foreground="{StaticResource MediumGreyBrush}">
-            <StatusBarItem Padding="0 0 0 10">
-                <TextBlock Name="statusBarText" Margin="-1 0 0 0">Click 'Seated' to change skeletal pipeline type!</TextBlock>
-            </StatusBarItem>
+            <StatusBarItem Padding="0 0 0 10"></StatusBarItem>
         </StatusBar>
-        <Label x:Name="solucionP" Content="Establezca la posicion inicial" HorizontalAlignment="Right" FontSize="25" Margin="0,0,0,3" Grid.Row="2" Grid.RowSpan="2" Width="406"></Label>
+        <Label x:Name="solucionP" Content="Establezca la posicion inicial" HorizontalAlignment="Right" FontSize="15" Margin="0,0,0,3" Grid.Row="3" Width="364"></Label>
+        <Button Content="Reiniciar" Grid.Row="3" Height="36" HorizontalAlignment="Left" Margin="12,22,0,0" Name="button1" VerticalAlignment="Top" Width="107" Click="button1_Click" />
+        <Slider Grid.Row="3" Height="19" HorizontalAlignment="Left" Margin="183,29,0,0" Name="slider1" VerticalAlignment="Top" Width="139" ValueChanged="slider1_ValueChanged" Maximum="0.5" Minimum="0" Value="0" />
+        <TextBlock Grid.Row="3" Height="23" Margin="183,8,406,0" Name="textBlock1" Text="               % Error" VerticalAlignment="Top" />
+        <TextBlock Grid.Row="3" Height="19" HorizontalAlignment="Left" Margin="159,29,0,0" Name="textBlock2" Text="5%" VerticalAlignment="Top" Width="18" />
+        <TextBlock Grid.Row="3" Height="19" Margin="327,0,377,26" Name="textBlock3" Text="50%" VerticalAlignment="Bottom" />
+        <TextBlock Grid.Row="3" Height="23" HorizontalAlignment="Left" Margin="229,48,0,0" Name="textBlock4" Text="" VerticalAlignment="Top" />
+        <TextBlock Grid.Row="3" Height="23" HorizontalAlignment="Left" Margin="249,48,0,0" Name="muestraError" Text="5%" VerticalAlignment="Top" />
     </Grid>
 </Window>

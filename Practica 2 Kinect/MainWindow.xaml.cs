@@ -17,8 +17,11 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
     {
         None,
         Inicio,
-        Correcto,
-        Transcurso,
+        Fase1,
+        Fase2,
+        Transcurso1,
+        Transcurso2,
+        Final
     };
 
     /// <summary>
@@ -28,22 +31,32 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
     {
         const int PostureDetectionNumber = 10;
         int accumulator = 0;
-        Posture postureInitial = Posture.None;
-        Posture postureAtras = Posture.Transcurso;
-        Posture postureFinal = Posture.Correcto;
         Posture postureStart = Posture.Inicio;
+        Posture postureInicial = Posture.None;
+        float error;
 
         // Puntos de union y Pens con los que vamos a pintar los huesos del cuerpo segun el movimiento
-        Joint wristR, elbowR, shoulderR, wristL, elbowL, shoulderL;
-        private readonly Pen penCorrecto = new Pen(Brushes.Green, 6);
-        private readonly Pen penTranscurso = new Pen(Brushes.Yellow, 6);
+        /*
+         * wrist --> muñeca
+         * elbow --> codo
+         * shoulder --> hombro
+         * hip --> cadera
+         * knee --> rodilla
+         * ankle --> tobillo
+        */
+        Joint wristR, elbowR, shoulderR, wristL, elbowL, shoulderL; //Parte superior
+        Joint hipC, kneeR, ankleR, kneeL, ankleL, ankleIR, ankleIL;                   //Parte inferior
+        private readonly Pen penFin = new Pen(Brushes.Green, 6);
+        private readonly Pen penProceso = new Pen(Brushes.Yellow, 6);
         private readonly Pen penInicio = new Pen(Brushes.Blue, 6);
         private readonly Pen penError = new Pen(Brushes.Red, 6);
 
         // Booleanos para controlar la posicion y pintar los huesos de distinto color
         private bool reposo = false;
-        private bool proceso = false;
-        private bool correcto = false;
+        private bool proceso1 = false;
+        private bool proceso2 = false;
+        private bool fin1 = false;
+        private bool fin2 = false;
 
         /// <summary>
         /// Bitmap that will hold color information
@@ -230,11 +243,6 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                     this.sensor = null;
                 }
             }
-
-            if (null == this.sensor)
-            {
-                this.statusBarText.Text = Properties.Resources.NoKinectReady;
-            }
         }
 
         /// <summary>
@@ -327,35 +335,85 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                 // Guardamos los puntos de union que nos interesan para el movimiento
                 if (bones.TrackingState == SkeletonTrackingState.Tracked)
                 {
-                    wristR = bones.Joints[JointType.WristRight]; //MUÑECA
-                    elbowR = bones.Joints[JointType.ElbowRight]; //CODO
-                    shoulderR = bones.Joints[JointType.ShoulderRight]; //HOMBRO
-                    wristL = bones.Joints[JointType.WristLeft]; //MUÑECA
-                    elbowL = bones.Joints[JointType.ElbowLeft]; //CODO
-                    shoulderL = bones.Joints[JointType.ShoulderLeft]; //HOMBRO
+                    shoulderR = bones.Joints[JointType.ShoulderRight];
+                    shoulderL = bones.Joints[JointType.ShoulderLeft];
+                    wristR = bones.Joints[JointType.WristRight];
+                    wristL = bones.Joints[JointType.WristLeft];
+                    elbowR = bones.Joints[JointType.ElbowRight];
+                    elbowL = bones.Joints[JointType.ElbowLeft];
+                    
+                    hipC = bones.Joints[JointType.HipCenter];
+                    kneeR = bones.Joints[JointType.KneeRight];
+                    kneeL = bones.Joints[JointType.KneeLeft];
+                    ankleR = bones.Joints[JointType.AnkleRight];
+                    ankleL = bones.Joints[JointType.AnkleRight];
                 }
             }
+
+            int aux = (int)(error * 100);
+            string mensaje = "" + aux + "%";
+            this.muestraError.Text = mensaje;
 
             // Llamada a las comprobaciones de la posicion del brazo, 
             // para que acceda el punto del hombro debe estar en tracking
             // sino produce errores.
-            if (shoulderR.TrackingState == JointTrackingState.Tracked)
-                comprobarGestos(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL);           
+            if (shoulderR.TrackingState == JointTrackingState.Tracked || hipC.TrackingState == JointTrackingState.Tracked)
+                comprobarGestos(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL, hipC, kneeR, kneeL, ankleR, ankleL, ankleIL, ankleIR, error);           
         }
 
+        //POSICION INICIAL
+        /***************************************************************************************************************************************************************/
+        /***************************************************************************************************************************************************************/
         // Comprueba si se encuentra en la posicion inicial
-        // Mano derecha en cruz.
-        public bool PosInicio(Joint wristR, Joint elbowR, Joint shoulderR, Joint wristL, Joint elbowL, Joint shoulderL)
+        // Mano derecha en cruz y piernas rectas.
+        public bool BrazosRectos(Joint wristR, Joint elbowR, Joint shoulderR, Joint wristL, Joint elbowL, Joint shoulderL, float error)
         {
-            if (elbowR.Position.Y < shoulderR.Position.Y + 0.03 && elbowR.Position.Y > shoulderR.Position.Y - 0.03 &&
-                wristR.Position.Y < shoulderR.Position.Y + 0.05 && wristR.Position.Y > shoulderR.Position.Y - 0.05
-                && elbowR.Position.Z < shoulderR.Position.Z + 0.03 && elbowR.Position.Z > shoulderR.Position.Z - 0.1 &&
-                wristR.Position.Z < shoulderR.Position.Z + 0.03 && wristR.Position.Z > shoulderR.Position.Z - 0.15)
+            if (elbowR.Position.Y < shoulderR.Position.Y + 0.03 + (0.03 * error) && elbowR.Position.Y > shoulderR.Position.Y - 0.03 + (0.03 * error) &&
+                wristR.Position.Y < shoulderR.Position.Y + 0.05 + (0.05 * error) && wristR.Position.Y > shoulderR.Position.Y - 0.05 + (0.05 * error) &&
+                elbowR.Position.Z < shoulderR.Position.Z + 0.03 + (0.03 * error) && elbowR.Position.Z > shoulderR.Position.Z - 0.1 + (0.1 * error) &&
+                wristR.Position.Z < shoulderR.Position.Z + 0.03 + (0.03 * error) && wristR.Position.Z > shoulderR.Position.Z - 0.15 + (0.15 * error))
             {
-                if (elbowL.Position.Y < shoulderL.Position.Y + 0.03 && elbowL.Position.Y > shoulderL.Position.Y - 0.03 &&
-                wristL.Position.Y < shoulderL.Position.Y + 0.05 && wristL.Position.Y > shoulderL.Position.Y - 0.05
-                && elbowL.Position.Z < shoulderL.Position.Z + 0.03 && elbowL.Position.Z > shoulderL.Position.Z - 0.1 &&
-                wristL.Position.Z < shoulderL.Position.Z + 0.03 && wristL.Position.Z > shoulderL.Position.Z - 0.15)
+                if (elbowL.Position.Y < shoulderL.Position.Y + 0.03 + (0.03 * error) && elbowL.Position.Y > shoulderL.Position.Y - 0.03 + (0.03 * error) &&
+                    wristL.Position.Y < shoulderL.Position.Y + 0.05 + (0.05 * error) && wristL.Position.Y > shoulderL.Position.Y - 0.05 + (0.05 * error) &&
+                    elbowL.Position.Z < shoulderL.Position.Z + 0.03 + (0.03 * error) && elbowL.Position.Z > shoulderL.Position.Z - 0.1 + (0.1 * error) &&
+                    wristL.Position.Z < shoulderL.Position.Z + 0.03 + (0.03 * error) && wristL.Position.Z > shoulderL.Position.Z - 0.15 + (0.15 * error))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        public bool PiernasRectas(Joint hipC, Joint kneeR, Joint kneeL, Joint ankleR, Joint ankleL)
+        {
+            if ((kneeL.Position.Z - ankleL.Position.Z) - (hipC.Position.Z - kneeL.Position.Z) > 0.01f - (0.01f * error) &&
+                (kneeR.Position.Z - ankleR.Position.Z) - (hipC.Position.Z - kneeR.Position.Z) > 0.01f - (0.01f * error))
+            {
+                ankleIR = ankleR;
+                ankleIL = ankleL;
+                return true;
+            }
+            return false;
+        }
+        public bool PosInicio(Joint wristR, Joint elbowR, Joint shoulderR, Joint wristL, Joint elbowL, Joint shoulderL, Joint hipC, Joint kneeR, Joint kneeL, Joint ankleR, Joint ankleL, float error)
+        {
+            if (BrazosRectos(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL, error) && PiernasRectas(hipC, kneeR, kneeL, ankleR, ankleL))
+                return true;
+
+            return false;
+        }
+        /***************************************************************************************************************************************************************/
+        /***************************************************************************************************************************************************************/
+
+        // FASE1
+        /***************************************************************************************************************************************************************/
+        /***************************************************************************************************************************************************************/
+        // Comprueba si esta avanzando en la hacia la posicion final de la Fase1 del ejercicio.
+        // Mano hacia delante hasta quedar en paralelo.
+        public bool TransMovimiento1(Joint wristR, Joint elbowR, Joint shoulderR, Joint wristL, Joint elbowL, Joint shoulderL, float error)
+        {
+            if (elbowR.Position.Z < shoulderR.Position.Z - 0.04 + (0.04 * error) && wristR.Position.Z < shoulderR.Position.Z - 0.04 + (0.04 * error))
+            {
+                if (elbowL.Position.Z < shoulderL.Position.Z - 0.04 + (0.04 * error) && wristL.Position.Z < shoulderL.Position.Z - 0.04 + (0.04 * error))
                 {
                     return true;
                 }
@@ -363,50 +421,76 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
             return false;
         }
 
-        // Comprueba si esta avanzando en la hacia la posicion final.
-        // Mano en cruz retrasada respecto al hombro.
-        public bool TransMovimiento(Joint wristR, Joint elbowR, Joint shoulderR, Joint wristL, Joint elbowL, Joint shoulderL)
+        // Comprueba si ha llegado a la posicion final de la Fase1.
+        // Brazos en paralelo delante del cuerpo y en horizontal al suelo.
+        public bool Fase1Final(Joint wristR, Joint elbowR, Joint shoulderR, Joint wristL, Joint elbowL, Joint shoulderL, float error)
         {
-            if (elbowR.Position.Z < shoulderR.Position.Z - 0.04 && wristR.Position.Z < shoulderR.Position.Z - 0.04)
+            if (elbowR.Position.Z < shoulderR.Position.Z - 0.22 + (0.22 * error) && wristR.Position.Z < shoulderR.Position.Z - 0.22 + (0.22 * error))
             {
-                if (elbowL.Position.Z < shoulderL.Position.Z - 0.04 && wristL.Position.Z < shoulderL.Position.Z - 0.04)
+                if (elbowL.Position.Z < shoulderL.Position.Z - 0.22 + (0.22 * error) && wristL.Position.Z < shoulderL.Position.Z - 0.22 + (0.22 * error))
                 {
                     return true;
                 }
             }
             return false;
         }
+        /***************************************************************************************************************************************************************/
+        /***************************************************************************************************************************************************************/
 
-        // Comprueba si ha llegado a la posicion final del movimiento.
-        // Mano en cruz atrasada respecto al hombro hasta el limite.
-        public bool MovFinalizado(Joint wristR, Joint elbowR, Joint shoulderR, Joint wristL, Joint elbowL, Joint shoulderL)
+        // FASE2
+        /***************************************************************************************************************************************************************/
+        /***************************************************************************************************************************************************************/
+        // Comprueba si esta avanzando en la hacia la posicion final de la Fase2 del ejercicio.
+        // Bajar poco a poco flexionando las rodillas y con la espalda recta.
+        public bool TransMovimiento2(Joint hipC, Joint kneeR, Joint kneeL, Joint ankleR, Joint ankleL, float error)
         {
-            if (elbowR.Position.Z < shoulderR.Position.Z - 0.22 && wristR.Position.Z < shoulderR.Position.Z - 0.22)
+
+            if ((hipC.Position.Y - kneeR.Position.Y) < 0.6 + (0.06 * error) && (hipC.Position.Y - kneeL.Position.Y) < 0.6 + (0.06 * error) &&
+                (hipC.Position.Y - kneeR.Position.Y) > 0.46 + (0.46 * error) && (hipC.Position.Y - kneeL.Position.Y) > 0.46 + (0.46 * error))
             {
-                if (elbowL.Position.Z < shoulderL.Position.Z - 0.22 && wristL.Position.Z < shoulderL.Position.Z - 0.22)
-                {
-                    return true;
-                }
-            }
+                return true;
+            }//Esto o <
             return false;
         }
 
-        // Comprobacion de los casos de error.
-        // Reinicial el ejercicio si se cumple cualquiera de ellos.
-        public bool CasoError(Joint wristR, Joint elbowR, Joint shoulderR, Joint wristL, Joint elbowL, Joint shoulderL)
+        // Comprueba si ha llegado a la posicion final de la Fase2.
+        // Brazos en paralelo delante del cuerpo y en horizontal al suelo en sentadilla.
+        public bool Fase2Final(Joint hipC, Joint kneeR, Joint kneeL, Joint ankleR, Joint ankleL, float error)
         {
-            if (elbowR.Position.Z > shoulderR.Position.Z - 0.03 || wristR.Position.Z > shoulderR.Position.Z - 0.03 || 
-                elbowR.Position.Y > shoulderR.Position.Y + 0.03 || elbowR.Position.Y < shoulderR.Position.Y - 0.03 ||
-                wristR.Position.Y > shoulderR.Position.Y + 0.05 || wristR.Position.Y < shoulderR.Position.Y - 0.05 ||
-                elbowL.Position.Z > shoulderL.Position.Z - 0.03 || wristL.Position.Z > shoulderL.Position.Z - 0.03 ||
-                elbowL.Position.Y > shoulderL.Position.Y + 0.03 || elbowL.Position.Y < shoulderL.Position.Y - 0.03 ||
-                wristL.Position.Y > shoulderL.Position.Y + 0.05 || wristL.Position.Y < shoulderL.Position.Y - 0.05)
+            if ((hipC.Position.Y - kneeR.Position.Y) < 0.45 + (0.45 * error) && (hipC.Position.Y - kneeL.Position.Y) < 0.45 + (0.45 * error))
             {
                 return true;
             }
             return false;
         }
+        
+        /***************************************************************************************************************************************************************/
+        /***************************************************************************************************************************************************************/
 
+        // ERROR
+        /***************************************************************************************************************************************************************/
+        /***************************************************************************************************************************************************************/
+        // Comprobacion de los casos de error.
+        // Reinicial el ejercicio si se cumple cualquiera de ellos.
+        public bool CasoError(Joint wristR, Joint elbowR, Joint shoulderR, Joint wristL, Joint elbowL, Joint shoulderL, Joint hipC, Joint kneeR, Joint kneeL, Joint ankleR, Joint ankleL, Joint ankleIR, Joint ankleIL, float error)
+        {
+            if (elbowR.Position.Y > shoulderR.Position.Y + 0.06 + (0.06 * error) || elbowR.Position.Y < shoulderR.Position.Y - 0.06 + (0.06 * error) ||
+                wristR.Position.Y > shoulderR.Position.Y + 0.08 + (0.08 * error) || wristR.Position.Y < shoulderR.Position.Y - 0.08 + (0.08 * error) ||
+                elbowL.Position.Y > shoulderL.Position.Y + 0.06 + (0.06 * error) || elbowL.Position.Y < shoulderL.Position.Y - 0.06 + (0.06 * error) ||
+                wristL.Position.Y > shoulderL.Position.Y + 0.08 + (0.08 * error) || wristL.Position.Y < shoulderL.Position.Y - 0.08 + (0.08 * error) ||
+                ankleR.Position.Y > ankleIR.Position.Y + 0.06 + (0.06 * error) || ankleL.Position.Y > ankleIL.Position.Y + 0.06 + (0.06 * error))
+            {
+                return true;
+            }
+
+            return false;
+        }
+        /***************************************************************************************************************************************************************/
+        /***************************************************************************************************************************************************************/
+
+        // DETECCION DE POSTURAS
+        /***************************************************************************************************************************************************************/
+        /***************************************************************************************************************************************************************/
         public bool PostureDetector(Posture posture)
         {
             if (postureStart != posture)
@@ -420,28 +504,36 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                 accumulator++;
                 return false;
             }
-            if (posture != postureInitial)
+            if (posture != postureInicial)
             {
                 accumulator = 0;
-                postureInitial = posture;
+                postureInicial = posture;
                 return true;
             }
             else
                 accumulator = 0;
             return false;
         }
+        /***************************************************************************************************************************************************************/
+        /***************************************************************************************************************************************************************/
 
-        // Metodo general de comprobacion de gestos.
-        public void comprobarGestos(Joint wristR, Joint elbowR, Joint shoulderR, Joint wristL, Joint elbowL, Joint shoulderL)
+        // FUNCION DE DETECCION DEL MOVIMIENTO
+        /***************************************************************************************************************************************************************/
+        /***************************************************************************************************************************************************************/
+        public void comprobarGestos(Joint wristR, Joint elbowR, Joint shoulderR, Joint wristL, Joint elbowL, Joint shoulderL,
+                                    Joint hipC, Joint kneeR, Joint kneeL, Joint ankleR, Joint ankleL, Joint ankleIR, Joint ankleIL, float error)
         {
-            if (PosInicio(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL))
+            //solucionP.Content = "Hombro Y: " + shoulderR.Position.Z + Environment.NewLine + "Mano Y:" + wristR.Position.Z + Environment.NewLine + "Codo Y:" + elbowR.Position.Z;
+            if (PosInicio(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL, hipC, kneeR, kneeL, ankleR, ankleL, error))
             {
                 if (PostureDetector(Posture.Inicio))
                 {
-                    solucionP.Content = "Postura de inicio correcta";
+                    solucionP.Content = "Postura de inicio correcta." + Environment.NewLine + "Puede comenzar";
                     reposo = true;
-                    correcto = false;
-                    proceso = false;
+                    proceso1 = false;
+                    proceso2 = false;
+                    fin1 = false;
+                    fin2 = false;
                 }
             }
             else
@@ -450,44 +542,54 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                 // no dara comienzo el ejercicio.
                 if (reposo)
                 {
-                    if (MovFinalizado(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL))
+                    if (Fase1Final(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL, error) && Fase2Final(hipC, kneeR, kneeL, ankleR, ankleL, error))
                     {
-                        if (PostureDetector(Posture.Correcto))
+                        if (PostureDetector(Posture.Fase1))
                         {
-                            correcto = true;
-                            proceso = false;
-                            solucionP.Content = "Moviento finalizado correctamente";
+                            reposo = true;
+                            proceso1 = false;
+                            proceso2 = false;
+                            fin1 = true;
+                            fin2 = true;
+                            solucionP.Content = "Movimiento finalizado correctamente intente realizar" + Environment.NewLine + "el ejercicio inverso sin que el esqueleto se ponga rojo";
                         }
                     }
-                    else if (PosInicio(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL))
+                    else if (PosInicio(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL, hipC, kneeR, kneeL, ankleR, ankleL, error))
                     {
                         if (PostureDetector(Posture.Inicio))
                         {
-                            correcto = false;
-                            proceso = false;
-                            solucionP.Content = "Postura de inicio, comienze";
+                            reposo = true;
+                            proceso1 = false;
+                            proceso2 = false;
+                            fin1 = false;
+                            fin2 = false;
+                            solucionP.Content = "Postura de inicio correcta." + Environment.NewLine + "Puede comenzar";
                         }
                     }
-                    else if (CasoError(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL))
+                    else if (CasoError(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL, hipC, kneeR, kneeL, ankleR, ankleL, ankleIR, ankleIL, error))
                     {
                         if (PostureDetector(Posture.None))
                         {
-                            correcto = false;
-                            proceso = false;
                             reposo = false;
-                            solucionP.Content = "Establezca la posicion inicial";
+                            proceso1 = false;
+                            proceso2 = false;
+                            fin1 = false;
+                            fin2 = false;
+                            solucionP.Content = "Establezca la posicion inicial y" + Environment.NewLine + "no realice movimientos raros";
                         }
                     }
-                    else if (TransMovimiento(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL))
+                    else if (TransMovimiento1(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL, error) && TransMovimiento2(hipC, kneeR, kneeL, ankleR, ankleL, error))
                     {
-                        if (PostureDetector(Posture.Transcurso))
+                        if (PostureDetector(Posture.Transcurso1))
                         {
-                            proceso = true;
-                            correcto = false;
-                            solucionP.Content = "Mueva la mano hacia atras";
+                            reposo = true;
+                            proceso1 = true;
+                            proceso2 = true;
+                            fin1 = false;
+                            fin2 = false;
+                            solucionP.Content = "Mueva los brazos hacia delante hasta quedar en paralelo" + Environment.NewLine + " a la vez que realiza una sentadilla.";
                         }
                     }
-                    
                 }
 
                 // Si salta un caso de error o no se establece la pos de reposo
@@ -496,14 +598,18 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                 {
                     if (PostureDetector(Posture.None))
                     {
-                        correcto = false;
-                        proceso = false;
                         reposo = false;
+                        proceso1 = false;
+                        proceso2 = false;
+                        fin1 = false;
+                        fin2 = false;
                         solucionP.Content = "Establezca la posicion inicial";
                     }
                 }
             }
         }
+        /***************************************************************************************************************************************************************/
+        /***************************************************************************************************************************************************************/
 
         /// <summary>
         /// Draws a skeleton's bones and joints
@@ -606,21 +712,34 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
             if (joint0.TrackingState == JointTrackingState.Tracked && joint1.TrackingState == JointTrackingState.Tracked)
             {
                 // Pintamos el hueso Hombro - Codo segun la posicion en la que se encuentra
-                if (jointType0 == JointType.ShoulderRight && jointType1 == JointType.ElbowRight || jointType0 == JointType.ShoulderLeft && jointType1 == JointType.ElbowLeft)
+                if (jointType0 == JointType.HipCenter && jointType1 == JointType.HipLeft || jointType0 == JointType.HipCenter && jointType1 == JointType.HipRight)
                 {
-                    drawPen = selectColor();
+                    drawPen = selectColorPiernas();
                 }
-                // Pintamos el hueso Codo - Muñeca segun la posicion en la que se encuentra
+                else if (jointType0 == JointType.HipLeft && jointType1 == JointType.KneeLeft || jointType0 == JointType.HipRight && jointType1 == JointType.KneeRight)
+                {
+                    drawPen = selectColorPiernas();
+                }
+                else if (jointType0 == JointType.KneeLeft && jointType1 == JointType.AnkleLeft || jointType0 == JointType.KneeRight && jointType1 == JointType.AnkleRight)
+                {
+                    drawPen = selectColorPiernas();
+                }
+                else if (jointType0 == JointType.AnkleLeft && jointType1 == JointType.FootLeft || jointType0 == JointType.AnkleRight && jointType1 == JointType.FootRight)
+                {
+                    drawPen = selectColorPiernas();
+                }
+                else if (jointType0 == JointType.ShoulderRight && jointType1 == JointType.ElbowRight || jointType0 == JointType.ShoulderLeft && jointType1 == JointType.ElbowLeft)
+                {
+                    drawPen = selectColorBrazos();
+                }
                 else if (jointType0 == JointType.ElbowRight && jointType1 == JointType.WristRight || jointType0 == JointType.ElbowLeft && jointType1 == JointType.WristLeft)
                 {
-                    drawPen = selectColor();
+                    drawPen = selectColorBrazos();
                 }
-                // Pintamos el hueso Muñeca - Mano segun la posicion en la que se encuentra
                 else if (jointType0 == JointType.WristRight && jointType1 == JointType.HandRight || jointType0 == JointType.WristLeft && jointType1 == JointType.HandLeft)
                 {
-                    drawPen = selectColor();
+                    drawPen = selectColorBrazos();
                 }
-                // Pintamos el resto de huesos con el color por defecto
                 else
                     drawPen = this.trackedBonePen;
             }
@@ -628,16 +747,17 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
             drawingContext.DrawLine(drawPen, this.SkeletonPointToScreen(joint0.Position), this.SkeletonPointToScreen(joint1.Position));
         }
 
-        // Metodo para la seleccion del color segun la posicion
-        // en la que se encuentre el brazo.
-        public Pen selectColor()
+        /// <summary>
+        /// Seleccion el pen del color con el que pintar los brazos
+        /// </summary>
+        public Pen selectColorBrazos()
         {
             if (reposo)
             {
-                if (proceso)
-                    return penTranscurso;
-                else if (correcto)
-                    return penCorrecto;
+                if (proceso1)
+                    return penProceso;
+                else if (fin1)
+                    return penFin;
                 else
                     return penInicio;
             }
@@ -646,28 +766,40 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
         }
 
         /// <summary>
-        /// Handles the checking or unchecking of the seated mode combo box
+        /// Seleccion el pen del color con el que pintar las piernas
         /// </summary>
-        /// <param name="sender">object sending the event</param>
-        /// <param name="e">event arguments</param>
-        private void CheckBoxSeatedModeChanged(object sender, RoutedEventArgs e)
+        public Pen selectColorPiernas()
         {
-            if (null != this.sensor)
+            if (reposo)
             {
-                if (this.checkBoxSeatedMode.IsChecked.GetValueOrDefault())
-                {
-                    this.sensor.SkeletonStream.TrackingMode = SkeletonTrackingMode.Seated;
-                }
-                else
-                {
-                    this.sensor.SkeletonStream.TrackingMode = SkeletonTrackingMode.Default;
-                }
+                //if (fin1)
+                //{
+                    if (proceso2)
+                        return penProceso;
+                    else if (fin2)
+                        return penFin;
+                    else
+                        return penInicio;
+                //}
+                //else
+                    //return penInicio;
             }
+            else
+                return penError;
         }
 
-        private void Image_ImageFailed(object sender, ExceptionRoutedEventArgs e)
+        private void button1_Click(object sender, RoutedEventArgs e)
         {
+            reposo = false;
+            proceso1 = false;
+            proceso2 = false;
+            fin1 = false;
+            fin2 = false;
+        }
 
+        private void slider1_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            error = (float)this.slider1.Value;
         }
     }
 }
