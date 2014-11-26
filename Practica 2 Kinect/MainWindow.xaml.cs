@@ -350,8 +350,8 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                 }
             }
 
-            int aux = (int)(error * 100);
-            string mensaje = "" + aux + "%";
+            int aux1 = (int)(error * 100);
+            string mensaje = "" + aux1 + "%";
             this.muestraError.Text = mensaje;
 
             // Llamada a las comprobaciones de la posicion del brazo, 
@@ -799,7 +799,8 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
 
         private void slider1_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            error = (float)this.slider1.Value;
+            int aux = (int)this.slider1.Value;
+            error = (float)aux / 100;
         }
     }
 }

@@ -70,10 +70,10 @@
         </StatusBar>
         <Label x:Name="solucionP" Content="Establezca la posicion inicial" HorizontalAlignment="Right" FontSize="15" Margin="0,0,0,3" Grid.Row="3" Width="364"></Label>
         <Button Content="Reiniciar" Grid.Row="3" Height="36" HorizontalAlignment="Left" Margin="12,22,0,0" Name="button1" VerticalAlignment="Top" Width="107" Click="button1_Click" />
-        <Slider Grid.Row="3" Height="19" HorizontalAlignment="Left" Margin="183,29,0,0" Name="slider1" VerticalAlignment="Top" Width="139" ValueChanged="slider1_ValueChanged" Maximum="0.5" Minimum="0" Value="0" />
+        <Slider Grid.Row="3" Height="19" HorizontalAlignment="Left" Margin="183,29,0,0" Name="slider1" VerticalAlignment="Top" Width="139" ValueChanged="slider1_ValueChanged" Maximum="15" Minimum="0" Value="0" />
         <TextBlock Grid.Row="3" Height="23" Margin="183,8,406,0" Name="textBlock1" Text="               % Error" VerticalAlignment="Top" />
         <TextBlock Grid.Row="3" Height="19" HorizontalAlignment="Left" Margin="159,29,0,0" Name="textBlock2" Text="5%" VerticalAlignment="Top" Width="18" />
-        <TextBlock Grid.Row="3" Height="19" Margin="327,0,377,26" Name="textBlock3" Text="50%" VerticalAlignment="Bottom" />
+        <TextBlock Grid.Row="3" Height="19" Margin="327,0,377,26" Name="textBlock3" Text="15%" VerticalAlignment="Bottom" />
         <TextBlock Grid.Row="3" Height="23" HorizontalAlignment="Left" Margin="229,48,0,0" Name="textBlock4" Text="" VerticalAlignment="Top" />
         <TextBlock Grid.Row="3" Height="23" HorizontalAlignment="Left" Margin="249,48,0,0" Name="muestraError" Text="5%" VerticalAlignment="Top" />
     </Grid>
