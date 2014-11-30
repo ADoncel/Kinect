@@ -12,6 +12,8 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
     using System.Windows.Media;
     using System.Windows.Media.Imaging;
     using Microsoft.Kinect;
+    using System.Diagnostics;
+    using System.Threading;
 
     public enum Posture
     {
@@ -57,6 +59,14 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
         private bool proceso2 = false;
         private bool fin1 = false;
         private bool fin2 = false;
+        private int contError1 = 0, contError2 = 0;
+        private int numMov = 1;
+        private bool subida = false;
+
+        /*** RELOJ *** /
+        Stopwatch clock = new Stopwatch();
+        TimeSpan time = new TimeSpan();
+        /*************/
 
         /// <summary>
         /// Bitmap that will hold color information
@@ -353,12 +363,18 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
             int aux1 = (int)(error * 100);
             string mensaje = "" + aux1 + "%";
             this.muestraError.Text = mensaje;
+            movRestantes.Text = numMov + "";
 
             // Llamada a las comprobaciones de la posicion del brazo, 
             // para que acceda el punto del hombro debe estar en tracking
             // sino produce errores.
             if (shoulderR.TrackingState == JointTrackingState.Tracked || hipC.TrackingState == JointTrackingState.Tracked)
-                comprobarGestos(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL, hipC, kneeR, kneeL, ankleR, ankleL, ankleIL, ankleIR, error);           
+            {
+                if (!subida)
+                    comprobarGestosBajada(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL, hipC, kneeR, kneeL, ankleR, ankleL, ankleIL, ankleIR, error);
+                if (subida)
+                    comprobarGestosSubida(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL, hipC, kneeR, kneeL, ankleR, ankleL, ankleIL, ankleIR, error);
+            }
         }
 
         //POSICION INICIAL
@@ -368,15 +384,15 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
         // Mano derecha en cruz y piernas rectas.
         public bool BrazosRectos(Joint wristR, Joint elbowR, Joint shoulderR, Joint wristL, Joint elbowL, Joint shoulderL, float error)
         {
-            if (elbowR.Position.Y < shoulderR.Position.Y + 0.03 + (0.03 * error) && elbowR.Position.Y > shoulderR.Position.Y - 0.03 + (0.03 * error) &&
-                wristR.Position.Y < shoulderR.Position.Y + 0.05 + (0.05 * error) && wristR.Position.Y > shoulderR.Position.Y - 0.05 + (0.05 * error) &&
-                elbowR.Position.Z < shoulderR.Position.Z + 0.03 + (0.03 * error) && elbowR.Position.Z > shoulderR.Position.Z - 0.1 + (0.1 * error) &&
-                wristR.Position.Z < shoulderR.Position.Z + 0.03 + (0.03 * error) && wristR.Position.Z > shoulderR.Position.Z - 0.15 + (0.15 * error))
+            if (elbowR.Position.Y < shoulderR.Position.Y + 0.06 + (0.03 * error) && elbowR.Position.Y > shoulderR.Position.Y - 0.06 + (0.03 * error) &&
+                wristR.Position.Y < shoulderR.Position.Y + 0.1 + (0.05 * error) && wristR.Position.Y > shoulderR.Position.Y - 0.1 + (0.05 * error) &&
+                elbowR.Position.Z < shoulderR.Position.Z + 0.06 + (0.03 * error) && elbowR.Position.Z > shoulderR.Position.Z - 0.15 + (0.1 * error) &&
+                wristR.Position.Z < shoulderR.Position.Z + 0.06 + (0.03 * error) && wristR.Position.Z > shoulderR.Position.Z - 0.2 + (0.15 * error))
             {
-                if (elbowL.Position.Y < shoulderL.Position.Y + 0.03 + (0.03 * error) && elbowL.Position.Y > shoulderL.Position.Y - 0.03 + (0.03 * error) &&
-                    wristL.Position.Y < shoulderL.Position.Y + 0.05 + (0.05 * error) && wristL.Position.Y > shoulderL.Position.Y - 0.05 + (0.05 * error) &&
-                    elbowL.Position.Z < shoulderL.Position.Z + 0.03 + (0.03 * error) && elbowL.Position.Z > shoulderL.Position.Z - 0.1 + (0.1 * error) &&
-                    wristL.Position.Z < shoulderL.Position.Z + 0.03 + (0.03 * error) && wristL.Position.Z > shoulderL.Position.Z - 0.15 + (0.15 * error))
+                if (elbowL.Position.Y < shoulderL.Position.Y + 0.06 + (0.03 * error) && elbowL.Position.Y > shoulderL.Position.Y - 0.06 + (0.03 * error) &&
+                    wristL.Position.Y < shoulderL.Position.Y + 0.1 + (0.05 * error) && wristL.Position.Y > shoulderL.Position.Y - 0.1 + (0.05 * error) &&
+                    elbowL.Position.Z < shoulderL.Position.Z + 0.06 + (0.03 * error) && elbowL.Position.Z > shoulderL.Position.Z - 0.15 + (0.1 * error) &&
+                    wristL.Position.Z < shoulderL.Position.Z + 0.06 + (0.03 * error) && wristL.Position.Z > shoulderL.Position.Z - 0.2 + (0.15 * error))
                 {
                     return true;
                 }
@@ -385,8 +401,8 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
         }
         public bool PiernasRectas(Joint hipC, Joint kneeR, Joint kneeL, Joint ankleR, Joint ankleL)
         {
-            if ((kneeL.Position.Z - ankleL.Position.Z) - (hipC.Position.Z - kneeL.Position.Z) > 0.01f - (0.01f * error) &&
-                (kneeR.Position.Z - ankleR.Position.Z) - (hipC.Position.Z - kneeR.Position.Z) > 0.01f - (0.01f * error))
+            if ((kneeL.Position.Z - ankleL.Position.Z) - (hipC.Position.Z - kneeL.Position.Z) > 0.005f - (0.01f * error) &&
+                (kneeR.Position.Z - ankleR.Position.Z) - (hipC.Position.Z - kneeR.Position.Z) > 0.005f - (0.01f * error))
             {
                 ankleIR = ankleR;
                 ankleIL = ankleL;
@@ -411,9 +427,9 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
         // Mano hacia delante hasta quedar en paralelo.
         public bool TransMovimiento1(Joint wristR, Joint elbowR, Joint shoulderR, Joint wristL, Joint elbowL, Joint shoulderL, float error)
         {
-            if (elbowR.Position.Z < shoulderR.Position.Z - 0.04 + (0.04 * error) && wristR.Position.Z < shoulderR.Position.Z - 0.04 + (0.04 * error))
+            if (elbowR.Position.Z < shoulderR.Position.Z - 0.07 + (0.07 * error) && wristR.Position.Z < shoulderR.Position.Z - 0.07 + (0.07 * error))
             {
-                if (elbowL.Position.Z < shoulderL.Position.Z - 0.04 + (0.04 * error) && wristL.Position.Z < shoulderL.Position.Z - 0.04 + (0.04 * error))
+                if (elbowL.Position.Z < shoulderL.Position.Z - 0.07 + (0.07 * error) && wristL.Position.Z < shoulderL.Position.Z - 0.07 + (0.07 * error))
                 {
                     return true;
                 }
@@ -425,9 +441,9 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
         // Brazos en paralelo delante del cuerpo y en horizontal al suelo.
         public bool Fase1Final(Joint wristR, Joint elbowR, Joint shoulderR, Joint wristL, Joint elbowL, Joint shoulderL, float error)
         {
-            if (elbowR.Position.Z < shoulderR.Position.Z - 0.22 + (0.22 * error) && wristR.Position.Z < shoulderR.Position.Z - 0.22 + (0.22 * error))
+            if (elbowR.Position.Z < shoulderR.Position.Z - 0.20 + (0.20 * error) && wristR.Position.Z < shoulderR.Position.Z - 0.20 + (0.20 * error))
             {
-                if (elbowL.Position.Z < shoulderL.Position.Z - 0.22 + (0.22 * error) && wristL.Position.Z < shoulderL.Position.Z - 0.22 + (0.22 * error))
+                if (elbowL.Position.Z < shoulderL.Position.Z - 0.20 + (0.20 * error) && wristL.Position.Z < shoulderL.Position.Z - 0.20 + (0.20 * error))
                 {
                     return true;
                 }
@@ -445,8 +461,8 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
         public bool TransMovimiento2(Joint hipC, Joint kneeR, Joint kneeL, Joint ankleR, Joint ankleL, float error)
         {
 
-            if ((hipC.Position.Y - kneeR.Position.Y) < 0.6 + (0.06 * error) && (hipC.Position.Y - kneeL.Position.Y) < 0.6 + (0.06 * error) &&
-                (hipC.Position.Y - kneeR.Position.Y) > 0.46 + (0.46 * error) && (hipC.Position.Y - kneeL.Position.Y) > 0.46 + (0.46 * error))
+            if ((hipC.Position.Y - kneeR.Position.Y) < 0.70 + (0.70 * error) && (hipC.Position.Y - kneeL.Position.Y) < 0.70 + (0.70 * error) &&
+                (hipC.Position.Y - kneeR.Position.Y) > 0.53 + (0.53 * error) && (hipC.Position.Y - kneeL.Position.Y) > 0.53 + (0.53 * error))
             {
                 return true;
             }//Esto o <
@@ -457,7 +473,7 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
         // Brazos en paralelo delante del cuerpo y en horizontal al suelo en sentadilla.
         public bool Fase2Final(Joint hipC, Joint kneeR, Joint kneeL, Joint ankleR, Joint ankleL, float error)
         {
-            if ((hipC.Position.Y - kneeR.Position.Y) < 0.45 + (0.45 * error) && (hipC.Position.Y - kneeL.Position.Y) < 0.45 + (0.45 * error))
+            if ((hipC.Position.Y - kneeR.Position.Y) < 0.52 + (0.52 * error) && (hipC.Position.Y - kneeL.Position.Y) < 0.52 + (0.52 * error))
             {
                 return true;
             }
@@ -520,7 +536,7 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
         // FUNCION DE DETECCION DEL MOVIMIENTO
         /***************************************************************************************************************************************************************/
         /***************************************************************************************************************************************************************/
-        public void comprobarGestos(Joint wristR, Joint elbowR, Joint shoulderR, Joint wristL, Joint elbowL, Joint shoulderL,
+        public void comprobarGestosBajada(Joint wristR, Joint elbowR, Joint shoulderR, Joint wristL, Joint elbowL, Joint shoulderL,
                                     Joint hipC, Joint kneeR, Joint kneeL, Joint ankleR, Joint ankleL, Joint ankleIR, Joint ankleIL, float error)
         {
             //solucionP.Content = "Hombro Y: " + shoulderR.Position.Z + Environment.NewLine + "Mano Y:" + wristR.Position.Z + Environment.NewLine + "Codo Y:" + elbowR.Position.Z;
@@ -528,12 +544,14 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
             {
                 if (PostureDetector(Posture.Inicio))
                 {
-                    solucionP.Content = "Postura de inicio correcta." + Environment.NewLine + "Puede comenzar";
+                    solucionP.Content = "Postura de inicio de la bajada correcta." + Environment.NewLine + "Comience a realizar el primer ejercicio.";
                     reposo = true;
                     proceso1 = false;
                     proceso2 = false;
                     fin1 = false;
                     fin2 = false;
+                    contError1 = 0;
+                    contError2 = 0;
                 }
             }
             else
@@ -542,16 +560,55 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                 // no dara comienzo el ejercicio.
                 if (reposo)
                 {
-                    if (Fase1Final(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL, error) && Fase2Final(hipC, kneeR, kneeL, ankleR, ankleL, error))
+                    if (Fase1Final(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL, error))
                     {
-                        if (PostureDetector(Posture.Fase1))
+                        if (Fase2Final(hipC, kneeR, kneeL, ankleR, ankleL, error))
                         {
-                            reposo = true;
-                            proceso1 = false;
-                            proceso2 = false;
-                            fin1 = true;
-                            fin2 = true;
-                            solucionP.Content = "Movimiento finalizado correctamente intente realizar" + Environment.NewLine + "el ejercicio inverso sin que el esqueleto se ponga rojo";
+                            if (PostureDetector(Posture.Fase1))
+                            {
+                                proceso1 = false;
+                                proceso2 = false;
+                                fin1 = true;
+                                fin2 = true;
+                                contError1 = 0;
+                                contError2 = 0;
+                                numMov--;
+                                if (numMov == 0)
+                                {
+                                    solucionP.Content = "Ha completado con exito el numero de repeticiones establecido." + Environment.NewLine + "Puede relajarse y descansar un poco.";
+                                    reposo = true;
+                                }
+                                else
+                                {
+                                    solucionP.Content = "Ha realizado correctamente el primer ejercicio." + Environment.NewLine + "Comience a realizar el ejercicio inverso.";
+                                    reposo = false;
+                                    subida = true;
+                                }
+                            }
+                        }
+                    }
+                    else if (Fase2Final(hipC, kneeR, kneeL, ankleR, ankleL, error))
+                    {
+                        if (Fase1Final(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL, error))
+                        {
+                            if (PostureDetector(Posture.Fase1))
+                            {
+                                reposo = false;
+                                proceso1 = false;
+                                proceso2 = false;
+                                fin1 = true;
+                                fin2 = true;
+                                contError1 = 0;
+                                contError2 = 0;
+                                numMov--;
+                                if (numMov == 0)
+                                    solucionP.Content = "Ha completado con exito el numero de repeticiones establecido." + Environment.NewLine + "Puede relajarse y descansar un poco.";
+                                else
+                                {
+                                    solucionP.Content = "Ha realizado correctamente el primer ejercicio." + Environment.NewLine + "Comience a realizar el ejercicio inverso.";
+                                    subida = true;
+                                }
+                            }
                         }
                     }
                     else if (PosInicio(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL, hipC, kneeR, kneeL, ankleR, ankleL, error))
@@ -563,8 +620,71 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                             proceso2 = false;
                             fin1 = false;
                             fin2 = false;
-                            solucionP.Content = "Postura de inicio correcta." + Environment.NewLine + "Puede comenzar";
+                            contError1 = 0;
+                            contError2 = 0;
+                            solucionP.Content = "Postura de inicio de la bajada correcta." + Environment.NewLine + "Comience a realizar el primer ejercicio.";
                         }
+                    }
+                    else if (TransMovimiento1(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL, error))
+                    {
+ 
+                        if (TransMovimiento2(hipC, kneeR, kneeL, ankleR, ankleL, error) && contError1 < 30)
+                        {
+                            if (PostureDetector(Posture.Transcurso1))
+                            {
+                                reposo = true;
+                                proceso1 = true;
+                                proceso2 = true;
+                                fin1 = false;
+                                fin2 = false;
+                                contError1 = 0;
+                                contError2 = 0;
+                                solucionP.Content = "Mueva los brazos hacia delante hasta quedar en paralelo" + Environment.NewLine + " a la vez que realiza una sentadilla.";
+                            }
+                        }
+                        else if(contError1 >= 50)
+                        {
+                            reposo = false;
+                            proceso1 = false;
+                            proceso2 = false;
+                            fin1 = false;
+                            fin2 = false;
+                            contError1 = 0;
+                            contError2 = 0;
+                            subida = false;
+                            solucionP.Content = "Establezca la posicion inicial de la bajada y" + Environment.NewLine + "no realice movimientos raros1";
+                        }
+                        contError1++;
+                    }
+                    else if (TransMovimiento2(hipC, kneeR, kneeL, ankleR, ankleL, error))
+                    {
+                        if (TransMovimiento1(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL, error) && contError2 < 30)
+                        {
+                            if (PostureDetector(Posture.Transcurso1))
+                            {
+                                reposo = true;
+                                proceso1 = true;
+                                proceso2 = true;
+                                fin1 = false;
+                                fin2 = false;
+                                contError2 = 0;
+                                contError1 = 0;
+                                solucionP.Content = "Mueva los brazos hacia delante hasta quedar en paralelo" + Environment.NewLine + " a la vez que realiza una sentadilla.";
+                            }
+                        }
+                        else if (contError2 >= 50)
+                        {
+                            reposo = false;
+                            proceso1 = false;
+                            proceso2 = false;
+                            fin1 = false;
+                            fin2 = false;
+                            contError2 = 0;
+                            contError1 = 0;
+                            subida = false;
+                            solucionP.Content = "Establezca la posicion inicial de la bajada y" + Environment.NewLine + "no realice movimientos raros2";
+                        }
+                        contError2++;
                     }
                     else if (CasoError(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL, hipC, kneeR, kneeL, ankleR, ankleL, ankleIR, ankleIL, error))
                     {
@@ -575,35 +695,195 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                             proceso2 = false;
                             fin1 = false;
                             fin2 = false;
-                            solucionP.Content = "Establezca la posicion inicial y" + Environment.NewLine + "no realice movimientos raros";
+                            contError1 = 0;
+                            contError2 = 0;
+                            subida = false;
+                            solucionP.Content = "Establezca la posicion inicial de la bajada y" + Environment.NewLine + "no realice movimientos raros3";
                         }
-                    }
-                    else if (TransMovimiento1(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL, error) && TransMovimiento2(hipC, kneeR, kneeL, ankleR, ankleL, error))
-                    {
-                        if (PostureDetector(Posture.Transcurso1))
-                        {
-                            reposo = true;
-                            proceso1 = true;
-                            proceso2 = true;
-                            fin1 = false;
-                            fin2 = false;
-                            solucionP.Content = "Mueva los brazos hacia delante hasta quedar en paralelo" + Environment.NewLine + " a la vez que realiza una sentadilla.";
-                        }
-                    }
+                    }                   
                 }
-
-                // Si salta un caso de error o no se establece la pos de reposo
-                // al iniciar el ejercicio.
-                else if (PostureDetector(Posture.None))
+            }
+        }
+        public void comprobarGestosSubida(Joint wristR, Joint elbowR, Joint shoulderR, Joint wristL, Joint elbowL, Joint shoulderL,
+                                    Joint hipC, Joint kneeR, Joint kneeL, Joint ankleR, Joint ankleL, Joint ankleIR, Joint ankleIL, float error)
+        {
+            if (Fase1Final(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL, error))
+            {
+                if (Fase2Final(hipC, kneeR, kneeL, ankleR, ankleL, error))
                 {
-                    if (PostureDetector(Posture.None))
+                    if (PostureDetector(Posture.Fase1))
                     {
                         reposo = false;
                         proceso1 = false;
                         proceso2 = false;
-                        fin1 = false;
-                        fin2 = false;
-                        solucionP.Content = "Establezca la posicion inicial";
+                        fin1 = true;
+                        fin2 = true;
+                        contError1 = 0;
+                        contError2 = 0;
+                        solucionP.Content = "Postura de inicio de la subida correcta." + Environment.NewLine + "Comience a realizar el segundo ejercicio.";
+                    }
+                }
+            }
+            else if (Fase2Final(hipC, kneeR, kneeL, ankleR, ankleL, error))
+            {
+                if (Fase1Final(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL, error))
+                {
+                    if (PostureDetector(Posture.Fase1))
+                    {
+                        reposo = false;
+                        proceso1 = false;
+                        proceso2 = false;
+                        fin1 = true;
+                        fin2 = true;
+                        contError1 = 0;
+                        contError2 = 0;
+                        solucionP.Content = "Postura de inicio de la subida correcta." + Environment.NewLine + "Comience a realizar el segundo ejercicio.";
+                    }
+                }
+            }
+            else
+            {
+                // La primera postura que debe reconocer sera la de reposo sino
+                // no dara comienzo el ejercicio.
+                if (fin1 && fin2)
+                {
+                    if (PosInicio(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL, hipC, kneeR, kneeL, ankleR, ankleL, error))
+                    {
+                        if (PostureDetector(Posture.Inicio))
+                        {
+                            reposo = true;
+                            proceso1 = false;
+                            proceso2 = false;
+                            contError1 = 0;
+                            contError2 = 0;
+                            numMov--;
+                            if (numMov <= 0)
+                            {
+                                solucionP.Content = "Ha completado con exito el numero de repeticiones establecido." + Environment.NewLine + "Puede relajarse y descansar un poco.";
+                                fin1 = true;
+                                fin2 = true;
+                            }
+                            else
+                            {
+                                solucionP.Content = "Ha realizado correctamente el segundo ejercicio." + Environment.NewLine + "Comience de nuevo.";
+                                fin1 = false;
+                                fin2 = false;
+                                subida = false;
+                            }
+                        }
+                    }
+                    else if (Fase1Final(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL, error))
+                    {
+                        if (Fase2Final(hipC, kneeR, kneeL, ankleR, ankleL, error))
+                        {
+                            if (PostureDetector(Posture.Fase1))
+                            {
+                                reposo = false;
+                                proceso1 = false;
+                                proceso2 = false;
+                                fin1 = true;
+                                fin2 = true;
+                                contError1 = 0;
+                                contError2 = 0;
+                                solucionP.Content = "Postura de inicio de la subida correcta." + Environment.NewLine + "Comience a realizar el segundo ejercicio.";
+                            }
+                        }
+                    }
+                    else if (Fase2Final(hipC, kneeR, kneeL, ankleR, ankleL, error))
+                    {
+                        if (Fase1Final(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL, error))
+                        {
+                            if (PostureDetector(Posture.Fase1))
+                            {
+                                reposo = false;
+                                proceso1 = false;
+                                proceso2 = false;
+                                fin1 = true;
+                                fin2 = true;
+                                contError1 = 0;
+                                contError2 = 0;
+                                solucionP.Content = "Postura de inicio de la subida correcta." + Environment.NewLine + "Comience a realizar el segundo ejercicio.";
+                            }
+                        }
+                    }
+                    else if (TransMovimiento1(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL, error))
+                    {
+
+                        if (TransMovimiento2(hipC, kneeR, kneeL, ankleR, ankleL, error) && contError1 < 30)
+                        {
+                            if (PostureDetector(Posture.Transcurso1))
+                            {
+                                reposo = false;
+                                proceso1 = true;
+                                proceso2 = true;
+                                fin1 = true;
+                                fin2 = true;
+                                contError1 = 0;
+                                contError2 = 0;
+                                solucionP.Content = "Mueva los brazos hacia atras hasta quedar en cruz" + Environment.NewLine + " a la vez que comienza a estirar las piernas.";
+                            }
+                        }
+                        else if (contError1 >= 50)
+                        {
+                            reposo = false;
+                            proceso1 = false;
+                            proceso2 = false;
+                            fin1 = false;
+                            fin2 = false;
+                            contError1 = 0;
+                            contError2 = 0;
+                            subida = false;
+                            numMov++;
+                            solucionP.Content = "Establezca la posicion inicial de la bajada y" + Environment.NewLine + "no realice movimientos raros4";
+                        }
+                        contError1++;
+                    }
+                    else if (TransMovimiento2(hipC, kneeR, kneeL, ankleR, ankleL, error))
+                    {
+                        if (TransMovimiento1(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL, error) && contError2 < 30)
+                        {
+                            if (PostureDetector(Posture.Transcurso1))
+                            {
+                                reposo = false;
+                                proceso1 = true;
+                                proceso2 = true;
+                                fin1 = true;
+                                fin2 = true;
+                                contError1 = 0;
+                                contError2 = 0;
+                                solucionP.Content = "Mueva los brazos hacia atras hasta quedar en cruz" + Environment.NewLine + " a la vez que comienza a estirar las piernas.";
+                            }
+                        }
+                        else if (contError2 >= 50)
+                        {
+                            reposo = false;
+                            proceso1 = false;
+                            proceso2 = false;
+                            fin1 = false;
+                            fin2 = false;
+                            contError1 = 0;
+                            contError2 = 0;
+                            subida = false;
+                            numMov++;
+                            solucionP.Content = "Establezca la posicion inicial de la bajada y" + Environment.NewLine + "no realice movimientos raros5";
+                        }
+                        contError2++;
+                    }
+                    else if (CasoError(wristR, elbowR, shoulderR, wristL, elbowL, shoulderL, hipC, kneeR, kneeL, ankleR, ankleL, ankleIR, ankleIL, error))
+                    {
+                        if (PostureDetector(Posture.None))
+                        {
+                            reposo = false;
+                            proceso1 = false;
+                            proceso2 = false;
+                            fin1 = false;
+                            fin2 = false;
+                            contError1 = 0;
+                            contError2 = 0;
+                            subida = false;
+                            numMov++;
+                            solucionP.Content = "Establezca la posicion inicial de la bajada y" + Environment.NewLine + "no realice movimientos raros6";
+                        }
                     }
                 }
             }
@@ -752,17 +1032,34 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
         /// </summary>
         public Pen selectColorBrazos()
         {
-            if (reposo)
+            if (!subida)
             {
-                if (proceso1)
-                    return penProceso;
-                else if (fin1)
-                    return penFin;
+                if (reposo)
+                {
+                    if (proceso1)
+                        return penProceso;
+                    else if (fin1)
+                        return penFin;
+                    else
+                        return penInicio;
+                }
                 else
-                    return penInicio;
+                    return penError;
             }
             else
-                return penError;
+            {
+                if (fin1)
+                {
+                    if (proceso1)
+                        return penProceso;
+                    else if (reposo)
+                        return penFin;
+                    else
+                        return penInicio;
+                }
+                else
+                    return penError;
+            }
         }
 
         /// <summary>
@@ -770,22 +1067,34 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
         /// </summary>
         public Pen selectColorPiernas()
         {
-            if (reposo)
+            if (!subida)
             {
-                //if (fin1)
-                //{
+                if (reposo)
+                {
                     if (proceso2)
                         return penProceso;
                     else if (fin2)
                         return penFin;
                     else
                         return penInicio;
-                //}
-                //else
-                    //return penInicio;
+                }
+                else
+                    return penError;
             }
             else
-                return penError;
+            {
+                if (fin2)
+                {
+                    if (proceso2)
+                        return penProceso;
+                    else if (reposo)
+                        return penFin;
+                    else
+                        return penInicio;
+                }
+                else
+                    return penError;
+            }
         }
 
         private void button1_Click(object sender, RoutedEventArgs e)
@@ -795,12 +1104,26 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
             proceso2 = false;
             fin1 = false;
             fin2 = false;
+            contError1 = 0;
+            contError2 = 0;
+            subida = false;
+            numMov = 1;
+            solucionP.Content = "Establezca la posicion inicial";
+            repeticiones.Text = "1";
+            movRestantes.Text = numMov + "";
+            
         }
 
         private void slider1_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             int aux = (int)this.slider1.Value;
             error = (float)aux / 100;
+        }
+
+        private void button2_Click(object sender, RoutedEventArgs e)
+        {
+            numMov = Convert.ToInt32(repeticiones.Text);
+            movRestantes.Text = numMov + "";
         }
     }
 }

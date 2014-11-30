@@ -47,15 +47,13 @@
     </Window.Resources>
     <Grid Name="layoutGrid" Margin="10 0 10 0">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="555*"/>
+            <RowDefinition Height="92"/>
+            <RowDefinition Height="530*"/>
             <RowDefinition Height="0"/>
             <RowDefinition Height="74"/>
         </Grid.RowDefinitions>
         <DockPanel Grid.Row="0" Margin="0 0 0 20">
-            <Image DockPanel.Dock="Left" Source="Images\Logo.png" Stretch="Fill" Height="32" Width="81" Margin="0 10 0 5"/>
-            <TextBlock DockPanel.Dock="Right" Margin="0 0 -1 0" VerticalAlignment="Bottom" Foreground="{StaticResource MediumGreyBrush}" FontFamily="Segoe UI" FontSize="18">Skeleton Basics</TextBlock>
-            <Image Grid.Column="1" Source="Images\Status.png" Stretch="None" HorizontalAlignment="Center" Margin="0 0 0 5"/>
+            <Label x:Name="solucionP" Content="Establezca la posicion inicial" FontSize="20" Width="725" Height="102" HorizontalAlignment="Center" VerticalAlignment="Top" BorderBrush="Blue" HorizontalContentAlignment="Center" FontWeight="Bold" FontStyle="Normal" FontFamily="Yu Gothic" FontStretch="Normal"></Label>
         </DockPanel>
 
         <Viewbox Grid.Row="1" Stretch="Uniform" HorizontalAlignment="Center">
@@ -68,13 +66,21 @@
         <StatusBar Grid.Row="3" HorizontalAlignment="Stretch" Name="statusBar" VerticalAlignment="Bottom" Background="White" Foreground="{StaticResource MediumGreyBrush}">
             <StatusBarItem Padding="0 0 0 10"></StatusBarItem>
         </StatusBar>
-        <Label x:Name="solucionP" Content="Establezca la posicion inicial" HorizontalAlignment="Right" FontSize="15" Margin="0,0,0,3" Grid.Row="3" Width="364"></Label>
-        <Button Content="Reiniciar" Grid.Row="3" Height="36" HorizontalAlignment="Left" Margin="12,22,0,0" Name="button1" VerticalAlignment="Top" Width="107" Click="button1_Click" />
-        <Slider Grid.Row="3" Height="19" HorizontalAlignment="Left" Margin="183,29,0,0" Name="slider1" VerticalAlignment="Top" Width="139" ValueChanged="slider1_ValueChanged" Maximum="15" Minimum="0" Value="0" />
-        <TextBlock Grid.Row="3" Height="23" Margin="183,8,406,0" Name="textBlock1" Text="               % Error" VerticalAlignment="Top" />
-        <TextBlock Grid.Row="3" Height="19" HorizontalAlignment="Left" Margin="159,29,0,0" Name="textBlock2" Text="5%" VerticalAlignment="Top" Width="18" />
-        <TextBlock Grid.Row="3" Height="19" Margin="327,0,377,26" Name="textBlock3" Text="15%" VerticalAlignment="Bottom" />
-        <TextBlock Grid.Row="3" Height="23" HorizontalAlignment="Left" Margin="229,48,0,0" Name="textBlock4" Text="" VerticalAlignment="Top" />
-        <TextBlock Grid.Row="3" Height="23" HorizontalAlignment="Left" Margin="249,48,0,0" Name="muestraError" Text="5%" VerticalAlignment="Top" />
+        <Viewbox Grid.Row="3" Stretch="Uniform" HorizontalAlignment="Center">
+            <Grid>
+                <Button Content="Reiniciar" Height="36" HorizontalAlignment="Left" Margin="23,15,0,0" Name="button1" VerticalAlignment="Top" Width="107" Click="button1_Click" />
+                <Slider Height="19" HorizontalAlignment="Left" Margin="194,22,0,0" Name="slider1" VerticalAlignment="Top" Width="139" ValueChanged="slider1_ValueChanged" Maximum="15" Minimum="0" Value="0" />
+                <TextBlock Height="23" Margin="194,1,395,0" Name="textBlock1" Text="               % Error" VerticalAlignment="Top" />
+                <TextBlock Height="19" HorizontalAlignment="Left" Margin="170,22,0,0" Name="textBlock2" Text="5%" VerticalAlignment="Top" Width="18" />
+                <TextBlock Height="19" Margin="338,0,366,33" Name="textBlock3" Text="15%" VerticalAlignment="Bottom" />
+                <TextBlock Height="23" HorizontalAlignment="Left" Margin="240,41,0,0" Name="textBlock4" Text="" VerticalAlignment="Top" />
+                <TextBlock Height="23" HorizontalAlignment="Left" Margin="260,41,0,0" Name="muestraError" Text="5%" VerticalAlignment="Top" />
+                <TextBox Height="23" HorizontalAlignment="Left" Margin="505,1,0,0" Name="repeticiones" VerticalAlignment="Top" Width="76" DataContext="{Binding ElementName=repeticiones}" Text="1" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" />
+                <Button Content="Establecer" Height="23" HorizontalAlignment="Left" Margin="505,32,0,0" Name="button2" VerticalAlignment="Top" Width="75" Click="button2_Click" />
+                <TextBlock Height="23" HorizontalAlignment="Left" Margin="412,18,0,0" Name="textBlock5" Text="Nº Repeticiones:" VerticalAlignment="Top" />
+                <TextBlock Height="23" HorizontalAlignment="Left" Margin="598,18,0,0" Name="textBlock6" Text="Restantes:" VerticalAlignment="Top" />
+                <TextBlock Height="23" HorizontalAlignment="Left" Margin="659,18,0,0" Name="movRestantes" Text="0" VerticalAlignment="Top" />
+            </Grid>
+        </Viewbox>
     </Grid>
 </Window>
